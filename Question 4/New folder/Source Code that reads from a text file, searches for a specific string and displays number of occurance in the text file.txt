@@ -1,0 +1,52 @@
+import re
+import os
+
+def count_occurrences(filename, search_string):
+    try:
+        with open(filename, 'r') as file:
+            content = file.read()
+            occurrences = content.lower().count(search_string.lower())
+            print(f'The string "{search_string}" occurs {occurrences} times in the file.')
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+
+def convert_to_sql(filename):
+    try:
+        with open(filename, 'r') as file:
+            content = file.read()
+            # Remove special characters
+            content = re.sub(r'[^\w\s]', '', content)
+            # Split content into lines
+            lines = content.split('\n')
+            # Get headers (first line)
+            headers = lines[0].split(',')
+            # Remove headers from content
+            lines = lines[1:]
+            # Create SQL file
+            sql_filename = os.path.splitext(filename)[0] + '.sql'
+            with open(sql_filename, 'w') as sql_file:
+                # Write SQL headers
+                sql_file.write("INSERT INTO table_name ({}) VALUES\n".format(', '.join(headers)))
+                # Write data rows
+                for line in lines:
+                    if line.strip():
+                        values = line.split(',')
+                        values = [f"'{value.strip()}'" for value in values]
+                        sql_file.write("    ({})".format(', '.join(values)))
+                        sql_file.write(',\n')
+                # Remove the last comma from the last line
+                sql_file.seek(-2, os.SEEK_END)
+                sql_file.truncate()
+                # Add semicolon at the end
+                sql_file.write(';')
+            print(f'Successfully converted {filename} to {sql_filename}')
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+
+# Example usage
+filename = 'example.txt'
+search_string = 'example'
+count_occurrences(filename, search_string)
+
+filename = 'example.csv'
+convert_to_sql(filename)
